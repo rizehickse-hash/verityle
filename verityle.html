@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verityle</title>
+<link rel="icon" type="image/png" href="verity.png">
+<style>
+  :root {
+    --bg: #ffffff;
+    --text: #000000;
+    --border: #d3d6da;
+    --border-filled: #878a8c;
+    --correct: #6aaa64;
+    --present: #c9b458;
+    --absent: #787c7e;
+    --key: #d3d6da;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Helvetica Neue", Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  header {
+    width: 100%;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+  }
+  h1 { margin: 0; font-size: 2.2rem; letter-spacing: 0.1em; }
+  #message {
+    min-height: 2.5em;
+    margin: 12px 16px 0;
+    text-align: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+  }
+  #board {
+    display: grid;
+    grid-template-rows: repeat(5, 1fr);
+    gap: 6px;
+    margin: 10px 16px;
+  }
+  .row {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 6px;
+  }
+  .row.shake { animation: shake 0.4s; }
+  @keyframes shake {
+    20%, 60% { transform: translateX(-6px); }
+    40%, 80% { transform: translateX(6px); }
+  }
+  .tile {
+    width: min(10vw, 58px);
+    height: min(10vw, 58px);
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+  }
+  .tile.filled { border-color: var(--border-filled); animation: pop 0.1s; }
+  @keyframes pop { 50% { transform: scale(1.1); } }
+  .tile img { width: 100%; height: 100%; object-fit: contain; }
+  .tile.correct { background: var(--correct); border-color: var(--correct); }
+  .tile.present { background: var(--present); border-color: var(--present); }
+  .tile.absent  { background: var(--absent);  border-color: var(--absent); }
+  .tile.flip { animation: flip 0.5s ease; }
+  @keyframes flip {
+    0% { transform: rotateX(0); }
+    50% { transform: rotateX(90deg); }
+    100% { transform: rotateX(0); }
+  }
+  #keyboard {
+    margin-top: auto;
+    padding: 16px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .key {
+    height: 64px;
+    min-width: 64px;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    background: var(--key);
+    color: var(--text);
+    font-weight: bold;
+    font-size: 0.95rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+  }
+  .key:active { filter: brightness(0.85); }
+  .key img { width: 44px; height: 44px; object-fit: contain; pointer-events: none; }
+  .key.correct { background: var(--correct); }
+  .key.present { background: var(--present); }
+  .key.absent  { background: var(--absent); }
+  .key.correct, .key.present, .key.absent { color: #ffffff; }
+  .key.wide { width: 110px; }
+  @media (max-width: 600px) {
+    #keyboard { gap: 6px; flex-wrap: nowrap; }
+    .key { width: 44px; min-width: 0; flex: 0 0 auto; overflow: hidden; padding: 4px; font-size: 0.75rem; height: 56px; }
+    .key img { width: 34px; height: 34px; }
+    .key.wide { width: 76px; }
+  }
+  #popup {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+  #popup.show { display: flex; }
+  #popup .box {
+    background: #ffffff;
+    color: #000000;
+    margin: 0 16px;
+    padding: 32px 28px;
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    font-size: 1.3rem;
+    font-weight: bold;
+    max-width: 420px;
+    animation: pop 0.2s;
+  }
+  #popup .box img { width: 64px; height: 64px; display: block; margin: 0 auto 14px; }
+  .answer-row { display: inline-flex; gap: 4px; margin-top: 6px; }
+  .answer-row img { width: 28px; height: 28px; }
+</style>
+</head>
+<body>
+  <header><h1>VERITYLE</h1></header>
+  <div id="message"></div>
+  <div id="board"></div>
+  <div id="keyboard">
+    <button class="key wide" data-key="Backspace">Backspace</button>
+    <button class="key" data-key="verity"><img src="verity.png" alt="verity"></button>
+    <button class="key" data-key="cruelty"><img src="cruelty.png" alt="cruelty"></button>
+    <button class="key" data-key="lovity"><img src="lovity.png" alt="lovity"></button>
+    <button class="key" data-key="falsity"><img src="falsity.png" alt="falsity"></button>
+    <button class="key wide" data-key="Enter">Enter</button>
+  </div>
+  <div id="popup">
+    <div class="box">
+      <img src="verity.png" alt="">
+      Congratulations! You completed the verityle.
+    </div>
+  </div>
+
+<script>
+  const SYMBOLS = ["verity", "cruelty", "lovity", "falsity"];
+  const ROWS = 5;
+  const COLS = 8;
+
+  const boardEl = document.getElementById("board");
+  const messageEl = document.getElementById("message");
+  const popupEl = document.getElementById("popup");
+
+  let answer, guesses, currentRow, current, gameOver, busy;
+
+  function buildBoard() {
+    boardEl.innerHTML = "";
+    for (let r = 0; r < ROWS; r++) {
+      const row = document.createElement("div");
+      row.className = "row";
+      for (let c = 0; c < COLS; c++) {
+        const tile = document.createElement("div");
+        tile.className = "tile";
+        row.appendChild(tile);
+      }
+      boardEl.appendChild(row);
+    }
+  }
+
+  function newGame() {
+    answer = Array.from({ length: COLS }, () => SYMBOLS[Math.floor(Math.random() * SYMBOLS.length)]);
+    currentRow = 0;
+    current = [];
+    gameOver = false;
+    busy = false;
+    messageEl.innerHTML = "";
+    popupEl.classList.remove("show");
+    document.querySelectorAll(".key").forEach(k => k.classList.remove("correct", "present", "absent"));
+    buildBoard();
+  }
+
+  function tileAt(r, c) {
+    return boardEl.children[r].children[c];
+  }
+
+  function renderCurrentRow() {
+    for (let c = 0; c < COLS; c++) {
+      const tile = tileAt(currentRow, c);
+      const sym = current[c];
+      if (sym) {
+        if (!tile.firstChild || tile.dataset.sym !== sym) {
+          tile.innerHTML = `<img src="${sym}.png" alt="${sym}">`;
+          tile.dataset.sym = sym;
+          tile.classList.add("filled");
+        }
+      } else {
+        tile.innerHTML = "";
+        delete tile.dataset.sym;
+        tile.classList.remove("filled");
+      }
+    }
+  }
+
+  function showMessage(html) {
+    messageEl.innerHTML = html;
+  }
+
+  function addSymbol(sym) {
+    if (gameOver || busy || current.length >= COLS) return;
+    current.push(sym);
+    renderCurrentRow();
+  }
+
+  function removeSymbol() {
+    if (gameOver || busy || current.length === 0) return;
+    current.pop();
+    renderCurrentRow();
+  }
+
+  // Wordle-style scoring: greens first, then yellows limited by remaining counts.
+  function score(guess) {
+    const result = Array(COLS).fill("absent");
+    const remaining = {};
+    for (let i = 0; i < COLS; i++) {
+      if (guess[i] === answer[i]) {
+        result[i] = "correct";
+      } else {
+        remaining[answer[i]] = (remaining[answer[i]] || 0) + 1;
+      }
+    }
+    for (let i = 0; i < COLS; i++) {
+      if (result[i] === "correct") continue;
+      if (remaining[guess[i]] > 0) {
+        result[i] = "present";
+        remaining[guess[i]]--;
+      }
+    }
+    return result;
+  }
+
+  const RANK = { absent: 1, present: 2, correct: 3 };
+  function updateKey(sym, state) {
+    const key = document.querySelector(`.key[data-key="${sym}"]`);
+    const prev = ["correct", "present", "absent"].find(s => key.classList.contains(s));
+    if (!prev || RANK[state] > RANK[prev]) {
+      key.classList.remove("correct", "present", "absent");
+      key.classList.add(state);
+    }
+  }
+
+  function submit() {
+    if (gameOver || busy) return;
+    if (current.length < COLS) {
+      showMessage("Not enough symbols");
+      const row = boardEl.children[currentRow];
+      row.classList.remove("shake");
+      void row.offsetWidth;
+      row.classList.add("shake");
+      return;
+    }
+    showMessage("");
+    busy = true;
+    const guess = current.slice();
+    const result = score(guess);
+    const row = currentRow;
+
+    result.forEach((state, i) => {
+      setTimeout(() => {
+        const tile = tileAt(row, i);
+        tile.classList.add("flip");
+        setTimeout(() => tile.classList.add(state), 250);
+      }, i * 200);
+    });
+
+    setTimeout(() => {
+      guess.forEach((sym, i) => updateKey(sym, result[i]));
+      busy = false;
+      if (result.every(s => s === "correct")) {
+        gameOver = true;
+        popupEl.classList.add("show");
+      } else if (row === ROWS - 1) {
+        gameOver = true;
+        const imgs = answer.map(s => `<img src="${s}.png" alt="${s}">`).join("");
+        showMessage(`Out of guesses! The answer was:<br><span class="answer-row">${imgs}</span>`);
+      } else {
+        currentRow++;
+        current = [];
+      }
+    }, COLS * 200 + 400);
+  }
+
+  function handleKey(key) {
+    if (key === "Enter") submit();
+    else if (key === "Backspace") removeSymbol();
+    else if (SYMBOLS.includes(key)) addSymbol(key);
+  }
+
+  document.getElementById("keyboard").addEventListener("click", e => {
+    const btn = e.target.closest(".key");
+    if (btn) {
+      handleKey(btn.dataset.key);
+      btn.blur();
+    }
+  });
+
+  // Physical keyboard: 1-4 map to verity, cruelty, lovity, falsity.
+  document.addEventListener("keydown", e => {
+    if (e.key === "Enter" || e.key === "Backspace") {
+      e.preventDefault();
+      handleKey(e.key);
+    } else if (["1", "2", "3", "4"].includes(e.key)) {
+      handleKey(SYMBOLS[Number(e.key) - 1]);
+    }
+  });
+
+  // Click anywhere to close the popup.
+  popupEl.addEventListener("click", () => popupEl.classList.remove("show"));
+
+  newGame();
+</script>
+</body>
+</html>
